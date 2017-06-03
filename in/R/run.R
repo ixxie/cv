@@ -7,11 +7,11 @@ pars <- list()
     pars$basealp = 90
 
 # Input path
-pars$i <- "./skills.csv" 
+pars$i <- "./in/" 
 # Output directory
 pars$o <- "./out/"
 
-source("./R/skillpie.R")
+source("./in/R/skillpie.R")
 
 
 makeSet(pars)

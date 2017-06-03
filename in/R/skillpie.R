@@ -6,9 +6,9 @@ makeSet <- function(pars)
 {
     pars %>% loadSet -> set
 
-    set %>% filterMax %>% makeHistory %>% countSkills %>% makeColors %>% sliceSet %>% makeSkillpie -> set
+    set %>% filterMax %>%  countSkills %>% countFields %>% makeColors %>% sliceSet %>% makeSkillpie -> set
   
-    set %>% print -> set
+    set %>% makeHistory -> set
 
     set %>% savePdfs
 
@@ -18,7 +18,7 @@ makeSet <- function(pars)
 loadSet <- function(pars)
 {
     # Load skills.csv into dataframe
-    skills <- read.csv(pars$i)
+    skills <- read.csv(paste0(pars$i,"skills.csv"))
     skills$type <- as.factor(skills$type)
 
     # Construct the Field Table
@@ -237,7 +237,7 @@ set$plots$skillpie <-
     return(set)
 }
 
-# Save Holograph as PDF
+# Save Plots as PDF
 savePdfs <- function(set) 
 {
     name <- names(set$plots)
