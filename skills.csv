@@ -1,50 +1,62 @@
-type,level,skill,Phase
-Science,3,Dynamical Systems,A
-Science,3,Probability,A
-Science,2,Stochastic Processes,A
-Science,2,Game Theory,A
-Science,2,Complex Systems,A
-Science,1,Microscopy,A
-Science,1,Biotechnology,A
-Science,3,Complex Systems,B
-Science,3,Mathematical Ecology,B
-Science,2,Population Genetics,B
-Science,2, Cell Modeling, B
-Science,3,Stochastic Processes,B
-Science,1,Behavioral Field Work,B
-Discourse,2,Maths Teaching,C
-Discourse,2,Physics Teaching,C
-Discourse,1,Chemistry Teaching,C
-Discourse,2,Adolescent Pedagogy,C
-Discourse,3,English Language,0
-Discourse,2,Dutch Language,0
-Discourse,2,Hebrew Language,0
-Discourse,1,German Language,0
-Design,3,Print Layout,D
-Design,3,Logos & Illustration,D
-Design,3,Adobe Illustrator,D
-Design,2,Adobe Photoshop,D
-Design,1,Adobe InDesign,D
-Design,2,Branding,D
-Technology,1,CSS & HTML,D
-Technology,1,C++,D
-Technology,2,Wordpress Administration,D
-Technology,2,Ubuntu Administration,D
-Technology,2,Bash Scripting,D
-Technology,2,Git Toolchain,D
-Technology,3,R Programming,E
-Technology,3,Open-Source Ecosystem,E
-Science,2,Evolutionary Theory,E
-Science,3,Metacommunity Ecology,E
-Science,1,Signal Processing,E
-Technology,1,Multicopter Piloting,E
-Organization,2,Startup Ecosystem,F
-Discourse,3,Technical Writing,F
-Design,3,Branding,F
-Organization,1,Project Management,F
-Technology,2,Nix Packaging,F
-Technology,2,NixOS Administration,F
-Organization,2,Organization Ops.,F
-Organization,3,Operations Research,F
-Organization,3,Venture Architecture,F
-Discourse,3, Philosophy, F
+type,level,skill,phase
+Science,3,Dynamical Systems,bsc
+Science,2,Probability,bsc
+Science,2,Stochastic Processes,bsc
+Science,2,Game Theory,bsc
+Science,2,Complex Systems,bsc
+Science,1,Microscopy,bsc
+Science,1,Biotechnology,bsc
+Discourse,1,Technical Writing,bsc
+Discourse,1,Philosophy,bsc
+Discourse,1,Imagination,ch
+Discourse,1,Imagination,ib
+Discourse,2,Imagination,bsc
+Discourse,3,Imagination,msc
+Discourse,3,Imagination,des
+Discourse,3,Imagination,eco
+Discourse,3,Imagination,flux
+Discourse,2,Hebrew Language,ch
+Design,3,Print Layout,des
+Design,3,Logos & Illustration,des
+Design,3,Adobe Illustrator,des
+Design,2,Adobe Photoshop,des
+Design,1,Adobe InDesign,des
+Design,2,Branding,des
+Technology,1,CSS & HTML,des
+Technology,2,Wordpress Administration,des
+Technology,2,Ubuntu Administration,des
+Technology,2,Bash Scripting,des
+Technology,2,Git Toolchain,des
+Technology,3,Open-Source Ecosystem,des
+Design,3,Branding,des
+Organization,2,Startup Ecosystem,flux
+Discourse,3,Technical Writing,flux
+Organization,1,Project Management,flux
+Technology,2,Nix Packaging,flux
+Technology,2,NixOS Administration,flux
+Organization,2,Organization Ops.,flux
+Organization,3,Operations Research,flux
+Organization,3,Venture Architecture,flux
+Discourse,3,Philosophy,flux
+Discourse,3,English Language,ib
+Discourse,2,Dutch Language,ib
+Science,3,Probability,msc
+Science,3,Stochastic Processes,msc
+Science,3,Complex Systems,msc
+Science,3,Mathematical Ecology,msc
+Science,2,Population Genetics,msc
+Science,2,Cell Modeling,msc
+Science,1,Behavioral Field Work,msc
+Discourse,1,German Language,msc
+Technology,1,C++,msc
+Discourse,2,Technical Writing,msc
+Discourse,2,Philosophy,msc
+Technology,3,R Programming,res
+Science,2,Evolutionary Theory,res
+Science,3,Metacommunity Ecology,res
+Science,1,Signal Processing,res
+Technology,1,Multicopter Piloting,res
+Discourse,2,Maths Teaching,tut
+Discourse,2,Physics Teaching,tut
+Discourse,1,Chemistry Teaching,tut
+Discourse,2,Adolescent Pedagogy,tut

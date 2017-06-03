@@ -1,22 +1,16 @@
 library(ggplot2)
+library(magrittr)
 
 # Main function for creating the holoplot:
-makeHolo <- function(pars)
+makeSet <- function(pars)
 {
+    pars %>% loadSet -> set
 
-    savePdf(
-        makeHoloplot(
-            sliceSet(
-                makeColors(
-                    countSkills(
-                        filterMax(
-                            loadSet(pars)
-                        )
-                    )
-                )
-            )
-        )
-    )
+    set %>% filterMax %>% makeHistory %>% countSkills %>% makeColors %>% sliceSet %>% makeSkillpie -> set
+  
+    set %>% print -> set
+
+    set %>% savePdfs
 
 }
 
@@ -24,17 +18,29 @@ makeHolo <- function(pars)
 loadSet <- function(pars)
 {
     # Load skills.csv into dataframe
-    skills <- read.csv(pars$path)
+    skills <- read.csv(pars$i)
     skills$type <- as.factor(skills$type)
 
-    # Construct the Specialization Table
+    # Construct the Field Table
     types <- levels(skills$type)
-    specs <- data.frame(type=types)
+    fields <- data.frame(type=types)
 
-    set <- list("pars"=pars, "skills"=skills, "specs"=specs, "types"=types)
+    set <- list("pars"=pars, "skills"=skills, "fields"=fields, "types"=types, "plots"=list())
     
     return(set)
 }
+
+makeHistory <- function(set)
+{
+    set$phases <- levels(set$skills$phase)
+
+    set$history <- set$skills[,c("type","level", "phase")]
+    
+    return(set) 
+}
+
+
+
 
 # Filters out the maximum skill levels in case of duplicates:
 filterMax <- function(set)
@@ -57,20 +63,38 @@ countSkills <- function(set)
 {
     # Initialize fields to count the number of skills per type:
     set$skills$num <- numeric(nrow(set$skills))
-    set$specs$num <- numeric(length(set$types))
 
     # Cycle through skill type and count the number of skills of that type:
     for (t in set$types)
     {
-        set$specs[set$specs$type==t,]$num <- 
             set$skills[set$skills$type==t,]$num <- 
                 nrow(set$skills[set$skills$type==t,])
     }
 
-    # Reorder the skills & specs tables by decending type class size and decending level:
+    # Reorder the skills & fields tables by decending type class size and decending level:
     set$skills <- set$skills[with(set$skills,order(-num, type, -level)),]
     row.names(set$skills) <- 1:nrow(set$skills)
-    set$specs <- set$specs[with(set$specs,order(-num)),]
+
+    return(set)
+}
+
+# Counts type frequencies and orders tables by it:
+countFields <- function(set)
+{
+    # Initialize fields to count the number of skills per type:
+    set$fields$num <- numeric(length(set$types))
+
+    # Cycle through skill type and count the number of skills of that type:
+    for (t in set$types)
+    {
+        set$fields[set$fields$type==t,]$num <- 
+            set$skills[set$skills$type==t,]$num <- 
+                nrow(set$skills[set$skills$type==t,])
+    }
+
+    # Reorder the skills & fields tables by decending type class size and decending level:
+    set$fields <- set$fields[with(set$fields,order(-num)),]
+    row.names(set$fields) <- 1:nrow(set$fields)
 
     return(set)
 }
@@ -79,12 +103,12 @@ countSkills <- function(set)
 makeColors <- function(set)
 {
     # Construct colors and alpha levels from skill type and level:
-    set$specs$col <- set$pars$col[match(set$specs$type, set$types)]
+    set$fields$col <- set$pars$col[match(set$fields$type, set$types)]
     set$skills$col <- set$pars$col[match(set$skills$type, set$types)]
     set$skills$alp <- set$pars$alp[set$skills$level]
 
-    # But set the specialization alpha to base alpha.
-    set$specs$alp <- set$pars$basealp
+    # But set the field alpha to base alpha.
+    set$fields$alp <- set$pars$basealp
 
     return(set)
 }
@@ -106,35 +130,59 @@ makeTheta <- function(table)
 sliceSet <- function(set)
 {
     skills <- set$skills
-    specs <- set$specs
+    fields <- set$fields
 
     # Construct Y-Coord. Spans from the table order and calculate total height:
     skills$ymin <- as.numeric(1:nrow(skills))
     skills$ymax <- skills$ymin + 1.
     skills$ydif <- max(skills$ymax) - min(skills$ymin)
 
-    # Derive corresponsing Y-Coord. for specs:
-    for (t in specs$type)
+    # Derive corresponsing Y-Coord. for fields:
+    for (t in fields$type)
     {
         fr <- skills[skills$type == t,]
-        specs[specs$type==t,"ymin"] <- min(fr$ymin)
-        specs[specs$type==t,"ymax"] <- max(fr$ymax)    
+        fields[fields$type==t,"ymin"] <- min(fr$ymin)
+        fields[fields$type==t,"ymax"] <- max(fr$ymax)    
     }
-    specs$ydif <- max(specs$ymax) - min(specs$ymin)
+    fields$ydif <- max(fields$ymax) - min(fields$ymin)
 
     # Calculate the angular coordinate of slices and output to set:
     set$skills <- makeTheta(skills)
-    set$specs <- makeTheta(specs)
+    set$fields <- makeTheta(fields)
     return(set)
 
 }
 
 
-
-# Build ggplot object for Holoplot:
-makeHoloplot <- function(set)
+makeExp <- function(set)
 {
-set$holoplot <- 
+    set$exps <- data.frame(type=list(), freq=list(), level=list())
+    for (p in set$phases)
+    {
+        set$exps[[p]] <- data.frame()
+    }
+}
+
+# Build ggplot object for a Expchart
+
+makeExpchart <- function(set)
+{
+    for (phase in set$phases)
+    {
+
+        dat <- set$history[[phase]]
+
+        set$plots[[paste0("expchart-", phase)]] <- 
+            ggplot(dat, aes(type, )) +
+                geom_bar(data=)
+    
+    }
+}
+
+# Build ggplot object for a Skillpie:
+makeSkillpie <- function(set)
+{
+set$plots$skillpie <- 
     ggplot() + 
         geom_rect(
             data=set$skills,
@@ -145,7 +193,7 @@ set$holoplot <-
                 )
             ) +
         geom_rect(
-            data=set$specs,
+            data=set$fields,
             aes(
                 fill=col, colour=col, alpha=alp, 
                 ymax=ymax, ymin=ymin,
@@ -171,7 +219,7 @@ set$holoplot <-
         plot.background=element_blank()
         ) +
     geom_text(
-        data=set$specs,
+        data=set$fields,
         aes(
             x=4,y=(ymin+ymax)/2, angle = theta, 
             label=type, fontface="bold", lineheight = 0.3
@@ -190,12 +238,16 @@ set$holoplot <-
 }
 
 # Save Holograph as PDF
-savePdf <- function(set) 
+savePdfs <- function(set) 
 {
-        pdf(set$pars$out)
-        print(set$holoplot)
+    name <- names(set$plots)
+    for (plot in 1:length(set$plots))
+    {
+        pdf(paste0(set$pars$o,name[plot],".pdf"))
+        print(set$plots[plot])
         dev.off()
         return()
+    }
 }
 
 

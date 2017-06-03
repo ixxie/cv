@@ -30,7 +30,7 @@
 -----------------------------------------------------------------------------------
 
 
-![skills](./skills.pdf)\
+![skills](./out/skillpie.pdf)\
 
 
 \newpage
@@ -109,6 +109,13 @@
 
 \
 
+*2003-2005:*                **IB Diploma Program**
+
+                              *International School Hilversum, the Netherlands*
+
+                              --------------------
+
+                              Studied a curriculum of physics, chemistry and mathematics in high-level and economics, english A1 and dutch A2 at standard-level. Developed a taste for philosophy and methodology in theory of knowledge classes.
 
 
 

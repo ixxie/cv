@@ -6,12 +6,12 @@ pars <- list()
     pars$alp = c(10,40,70)
     pars$basealp = 90
 
-#spath <- normalizePath(dirname(sys.frame(1)$ofile))
-pars$path <- "./skills.csv" #paste0(spath,"/skillpie.R")/home/ixxie/Projects/Admin/CV/R
-
-pars$out <- "./skills.pdf"
+# Input path
+pars$i <- "./skills.csv" 
+# Output directory
+pars$o <- "./out/"
 
 source("./R/skillpie.R")
 
 
-makeHolo(pars)
+makeSet(pars)
