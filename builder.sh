@@ -1,4 +1,6 @@
  #!/usr/bin/env bash
 set -e
- 
-pandoc --latex-engine=xelatex --include-in-header=options.tex ./fluxcraft.md -o ./fluxcraft.pdf
+
+Rscript ./R/run.R 
+
+pandoc --latex-engine=xelatex -V geometry:margin=2cm --include-in-header=options.tex ./M.B.Shenhav-CV.md -o ./M.B.Shenhav-CV.pdf

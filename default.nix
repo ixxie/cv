@@ -18,6 +18,6 @@ in
   } 
   ''
     mkdir -p $out
-    pandoc --latex-engine=xelatex $src/fluxcraft.md -o $out/fluxcraft.pdf
+    pandoc --latex-engine=xelatex --include-in-header=$src/options.tex $src/fluxcraft.md -o $out/fluxcraft.pdf
     echo ls $src/fonts/* > $out/test
   ''
