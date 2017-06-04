@@ -1,32 +1,31 @@
 library(ggplot2)
 library(magrittr)
+library(plyr)
 
-# Main function for creating the holoplot:
-makeSet <- function(pars)
+
+
+stripPath <- function(path)
 {
-    pars %>% loadSet -> set
-
-    set %>% filterMax %>%  countSkills %>% countFields %>% makeColors %>% sliceSet %>% makeSkillpie -> set
-  
-    set %>% makeHistory -> set
-
-    set %>% savePdfs
-
+    sub(pattern = "(.*)\\..*$", replacement = "\\1", basename(filepath))
 }
 
-# Loads the data set from a csv file:
-loadSet <- function(pars)
+makeSet <- function(par=list())
 {
+    set <- list("par"=par, "tab"=list(), "plot"=list())
+    return(set)
+}
+# Loads the data set from a csv file:
+loadTables <- function(set)
+{
+    tables <- list.files("./in/tables")
     # Load skills.csv into dataframe
-    skills <- read.csv(paste0(pars$i,"skills.csv"))
-    skills$type <- as.factor(skills$type)
+    for (table in tables)
+    {
+        tabname <- stripPath(table)   
+        set$tab[[tabname]] <- read.csv(table)
+        set$tab[[tabname]] <- data.frame(set$tab[[tabname]], stringsAsFactors=TRUE)
+    }
 
-    # Construct the Field Table
-    types <- levels(skills$type)
-    fields <- data.frame(type=types)
-
-    set <- list("pars"=pars, "skills"=skills, "fields"=fields, "types"=types, "plots"=list())
-    
     return(set)
 }
 
@@ -58,6 +57,30 @@ filterMax <- function(set)
     return(set)
 }
 
+countTable <- function(set)
+{
+    set$tab
+
+    for (t in set$tab)
+    {
+        # Initialize fields to count the number of skills per type:
+        set$tab[[t]]$num <- numeric(nrow(set$skills))
+
+        # Cycle through skill type and count the number of skills of that type:
+        for (t in set$types)
+        {
+                set$skills[set$skills$type==t,]$num <- 
+                    nrow(set$skills[set$skills$type==t,])
+        }
+
+        # Reorder the skills & fields tables by decending type class size and decending level:
+        set$skills <- set$skills[with(set$skills,order(-num, type, -level)),]
+        row.names(set$skills) <- 1:nrow(set$skills)
+    }
+
+    return(set)
+}
+
 # Counts type frequencies and orders tables by it:
 countSkills <- function(set)
 {
@@ -82,13 +105,12 @@ countSkills <- function(set)
 countFields <- function(set)
 {
     # Initialize fields to count the number of skills per type:
-    set$fields$num <- numeric(length(set$types))
+    set$fields$num <- numeric(nrow(set$fields))
 
     # Cycle through skill type and count the number of skills of that type:
     for (t in set$types)
     {
-        set$fields[set$fields$type==t,]$num <- 
-            set$skills[set$skills$type==t,]$num <- 
+        set$fields[set$fields$type==t,]$num <-  
                 nrow(set$skills[set$skills$type==t,])
     }
 
@@ -103,12 +125,12 @@ countFields <- function(set)
 makeColors <- function(set)
 {
     # Construct colors and alpha levels from skill type and level:
-    set$fields$col <- set$pars$col[match(set$fields$type, set$types)]
-    set$skills$col <- set$pars$col[match(set$skills$type, set$types)]
-    set$skills$alp <- set$pars$alp[set$skills$level]
+    set$fields$col <- set$par$col[match(set$fields$type, set$types)]
+    set$skills$col <- set$par$col[match(set$skills$type, set$types)]
+    set$skills$alp <- set$par$alp[set$skills$level]
 
     # But set the field alpha to base alpha.
-    set$fields$alp <- set$pars$basealp
+    set$fields$alp <- set$par$basealp
 
     return(set)
 }
@@ -172,7 +194,7 @@ makeExpchart <- function(set)
 
         dat <- set$history[[phase]]
 
-        set$plots[[paste0("expchart-", phase)]] <- 
+        set$plot[[paste0("expchart-", phase)]] <- 
             ggplot(dat, aes(type, )) +
                 geom_bar(data=)
     
@@ -182,7 +204,7 @@ makeExpchart <- function(set)
 # Build ggplot object for a Skillpie:
 makeSkillpie <- function(set)
 {
-set$plots$skillpie <- 
+set$plot$skillpie <- 
     ggplot() + 
         geom_rect(
             data=set$skills,
@@ -200,8 +222,8 @@ set$plots$skillpie <-
                 xmax=7, xmin=0
                 )
             ) + 
-        scale_fill_manual(values=set$pars$col) +
-        scale_colour_manual(values=set$pars$col) +
+        scale_fill_manual(values=set$par$col) +
+        scale_colour_manual(values=set$par$col) +
         xlim(c(0, 15)) + 
     theme(
         aspect.ratio=1,
@@ -240,11 +262,11 @@ set$plots$skillpie <-
 # Save Plots as PDF
 savePdfs <- function(set) 
 {
-    name <- names(set$plots)
-    for (plot in 1:length(set$plots))
+    name <- names(set$plot)
+    for (plot in 1:length(set$plot))
     {
-        pdf(paste0(set$pars$o,name[plot],".pdf"))
-        print(set$plots[plot])
+        pdf(paste0(set$par$o,name[plot],".pdf"))
+        print(set$plot[plot])
         dev.off()
         return()
     }
