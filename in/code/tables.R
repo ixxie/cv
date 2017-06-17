@@ -1,23 +1,26 @@
 library(ggplot2)
+library(ggrepel)
 library(magrittr)
 library(plyr)
+library(showtext)
 
 
+showtext.auto()
 
-stripPath <- function(path)
-{
-    sub(pattern = "(.*)\\..*$", replacement = "\\1", basename(filepath))
-}
+font.add.google("Alegreya", "aleg")
+font.add.google("Alegreya SC", "alegsc")
 
+# Makes an empty set
 makeSet <- function(par=list())
 {
     set <- list("par"=par, "tab"=list(), "plot"=list())
     return(set)
 }
+
 # Loads the data set from a csv file:
 loadTables <- function(set)
 {
-    tables <- list.files("./in/tables")
+    tables <- normalizePath(paste0("./in/tables/",list.files("./in/tables")))
     # Load skills.csv into dataframe
     for (table in tables)
     {
@@ -29,117 +32,103 @@ loadTables <- function(set)
     return(set)
 }
 
-makeHistory <- function(set)
-{
-    set$phases <- levels(set$skills$phase)
-
-    set$history <- set$skills[,c("type","level", "phase")]
-    
-    return(set) 
-}
-
-
 
 
 # Filters out the maximum skill levels in case of duplicates:
-filterMax <- function(set)
+filterMax <- function(table, ifactor, ffactor)
 {
-    nskills <- data.frame()
-    for (s in levels(set$skills$skill))
+    ntable <- data.frame()
+    for (fac in levels(table[[ifactor]]))
     {
         # Load subframe that has skill s
-        sfr <- set$skills[set$skills$skill==s, ]
+        subtbl <- table[table[[ifactor]]==fac, ]
         # Extract the row with maximum skill level
-        nskills <- rbind(nskills,sfr[sfr$level==max(sfr$level),])
+        ntable <- rbind(ntable,subtbl[subtbl[[ffactor]]==max(subtbl[[ffactor]]),])
     }
-    set$skills <- nskills
     
-    return(set)
+    return(ntable)
 }
 
-countTable <- function(set)
+filterDups <- function(table)
 {
-    set$tab
-
-    for (t in set$tab)
-    {
-        # Initialize fields to count the number of skills per type:
-        set$tab[[t]]$num <- numeric(nrow(set$skills))
-
-        # Cycle through skill type and count the number of skills of that type:
-        for (t in set$types)
-        {
-                set$skills[set$skills$type==t,]$num <- 
-                    nrow(set$skills[set$skills$type==t,])
-        }
-
-        # Reorder the skills & fields tables by decending type class size and decending level:
-        set$skills <- set$skills[with(set$skills,order(-num, type, -level)),]
-        row.names(set$skills) <- 1:nrow(set$skills)
-    }
-
-    return(set)
+    table <- table[!duplicated(table),]
+    return(table)
 }
 
-# Counts type frequencies and orders tables by it:
-countSkills <- function(set)
+seqTable <- function(table, factor)
 {
-    # Initialize fields to count the number of skills per type:
-    set$skills$num <- numeric(nrow(set$skills))
 
-    # Cycle through skill type and count the number of skills of that type:
-    for (t in set$types)
+    index <- function(row)
     {
-            set$skills[set$skills$type==t,]$num <- 
-                nrow(set$skills[set$skills$type==t,])
+        freqtab <- count(table, factor)
+        row$num <- freqtab[row[[factor]], "freq"]
+        return(row)
     }
 
-    # Reorder the skills & fields tables by decending type class size and decending level:
-    set$skills <- set$skills[with(set$skills,order(-num, type, -level)),]
-    row.names(set$skills) <- 1:nrow(set$skills)
+    table <- adply(table, 1, index)
+    
+    table <- table[with(table, order(-num, table[[factor]],-level)), ]
+    row.names(table) <- 1:nrow(table)
 
-    return(set)
+    table$ymin <- as.numeric(row.names(table)) - 1
+    table$ymax <- as.numeric(row.names(table))
+
+
+    return(table)
 }
 
-# Counts type frequencies and orders tables by it:
-countFields <- function(set)
+
+facTable <- function(table, factor)
 {
-    # Initialize fields to count the number of skills per type:
-    set$fields$num <- numeric(nrow(set$fields))
+    table <- count(table, factor)
+    return(table)
+}
 
-    # Cycle through skill type and count the number of skills of that type:
-    for (t in set$types)
+sliceTable <- function(table, factor)
+{
+    ntable <- count(table, factor)
+    ntable <- ntable[with(ntable, order(-freq)), ]
+    row.names(ntable) <- 1:nrow(ntable)
+    for (type in levels(table[[factor]]) )
     {
-        set$fields[set$fields$type==t,]$num <-  
-                nrow(set$skills[set$skills$type==t,])
+        tab <- table[table[[factor]]==type,]
+        ntable[ntable[[factor]]==type,"ymin"] <- min(as.numeric(tab$ymin))
+        ntable[ntable[[factor]]==type,"ymax"] <- max(as.numeric(tab$ymax))
+        ntable[ntable[[factor]]==type,"col"] <- tab$col[1]        
+        ntable[ntable[[factor]]==type,"alp"] <- tab$alp[1]
+
     }
+    return(ntable)
+}
 
-    # Reorder the skills & fields tables by decending type class size and decending level:
-    set$fields <- set$fields[with(set$fields,order(-num)),]
-    row.names(set$fields) <- 1:nrow(set$fields)
+# Strips path to file name without extension:
+stripPath <- function(path)
+{
+    sub(pattern = "(.*)\\..*$", replacement = "\\1", basename(path))
+}
 
-    return(set)
+stripNames <- function(vector)
+{
+    names(vector) <- NULL
+    return(vector)
 }
 
 # Infers the color set 
-makeColors <- function(set)
+mapAes <- function(table, factor, aes, aesname)
 {
-    # Construct colors and alpha levels from skill type and level:
-    set$fields$col <- set$par$col[match(set$fields$type, set$types)]
-    set$skills$col <- set$par$col[match(set$skills$type, set$types)]
-    set$skills$alp <- set$par$alp[set$skills$level]
+    subtable <- as.factor(table[,factor])
+    # Construct aesthetic mapping for the factor:
+    table[,aesname] <- aes[match(subtable, levels(subtable))]
 
-    # But set the field alpha to base alpha.
-    set$fields$alp <- set$par$basealp
-
-    return(set)
+    return(table)
 }
 
 # Computes a central slice angle from linear slice coordinates:
 makeTheta <- function(table)
 {
+    dif <- max(table$ymax)-min(table$ymin)
     # Compute slice width
-    table$dif <- 360*(table$ymax - table$ymin)/table$ydif
+    table$dif <- 360*(table$ymax - table$ymin)/dif
     # Compute slice position 
     table$pos <- -(cumsum(table$dif) - 0.5*table$dif)
     # Compute slice center
@@ -148,127 +137,153 @@ makeTheta <- function(table)
     return(table)
 }
 
-# Computes linear and angular dimensions of slices of the data tables:
-sliceSet <- function(set)
+
+fluxBars <- function(table, ifactor, xfactor, yfactor, afactor, col)
 {
-    skills <- set$skills
-    fields <- set$fields
 
-    # Construct Y-Coord. Spans from the table order and calculate total height:
-    skills$ymin <- as.numeric(1:nrow(skills))
-    skills$ymax <- skills$ymin + 1.
-    skills$ydif <- max(skills$ymax) - min(skills$ymin)
+    ifacs <- levels(table[[ifactor]])
 
-    # Derive corresponsing Y-Coord. for fields:
-    for (t in fields$type)
-    {
-        fr <- skills[skills$type == t,]
-        fields[fields$type==t,"ymin"] <- min(fr$ymin)
-        fields[fields$type==t,"ymax"] <- max(fr$ymax)    
-    }
-    fields$ydif <- max(fields$ymax) - min(fields$ymin)
+    tempdf <- do.call("ddply", list(table, c(ifactor,xfactor), transform, maxy=call("sum",as.symbol(yfactor)) ) )
 
-    # Calculate the angular coordinate of slices and output to set:
-    set$skills <- makeTheta(skills)
-    set$fields <- makeTheta(fields)
-    return(set)
-
-}
+    maxy <- max(tempdf[["maxy"]])
 
 
-makeExp <- function(set)
-{
-    set$exps <- data.frame(type=list(), freq=list(), level=list())
-    for (p in set$phases)
-    {
-        set$exps[[p]] <- data.frame()
-    }
-}
+    plots <- list()
 
-# Build ggplot object for a Expchart
-
-makeExpchart <- function(set)
-{
-    for (phase in set$phases)
+    for (i in ifacs)
     {
 
-        dat <- set$history[[phase]]
-
-        set$plot[[paste0("expchart-", phase)]] <- 
-            ggplot(dat, aes(type, )) +
-                geom_bar(data=)
-    
+        tab <- subset(table, table[[ifactor]]==i)
+        plots[[i]] <- 
+            ggplot(tab, 
+                aes_string(x=xfactor,y=yfactor, fill=xfactor, alpha=afactor)) +
+                geom_bar(stat="identity") + 
+            scale_fill_manual(values=col) +
+            scale_colour_manual(values=col) +
+                    scale_x_discrete(drop=FALSE) + 
+                    scale_y_continuous(limits=c(0,maxy+1)) + 
+                theme(
+                    aspect.ratio=0.5,
+                    axis.line=element_blank(),
+                    axis.text.x=element_blank(),
+                    axis.text.y=element_blank(),
+                    axis.ticks=element_blank(),
+                    axis.title.x=element_blank(),
+                    legend.position="none",
+                    axis.title.y=element_blank(),
+                    panel.background=element_blank(),
+                    panel.border=element_blank(),
+                    panel.grid.major=element_blank(),
+                    panel.grid.minor=element_blank(),
+                    plot.background=element_blank()
+                    )
     }
+
+    return(plots)
 }
 
 # Build ggplot object for a Skillpie:
-makeSkillpie <- function(set)
+nestPie <- function(table, ifactor, ofactor, afactor, lab, col, alp, ialp=90)
 {
-set$plot$skillpie <- 
-    ggplot() + 
-        geom_rect(
-            data=set$skills,
-            aes(
-                fill=col, colour=col, alpha=alp, 
-                ymax=ymax, ymin=ymin, 
-                xmax=15, xmin=7
-                )
-            ) +
-        geom_rect(
-            data=set$fields,
-            aes(
-                fill=col, colour=col, alpha=alp, 
-                ymax=ymax, ymin=ymin,
-                xmax=7, xmin=0
-                )
-            ) + 
-        scale_fill_manual(values=set$par$col) +
-        scale_colour_manual(values=set$par$col) +
-        xlim(c(0, 15)) + 
-    theme(
-        aspect.ratio=1,
-        axis.line=element_blank(),
-        axis.text.x=element_blank(),
-        axis.text.y=element_blank(),
-        axis.ticks=element_blank(),
-        axis.title.x=element_blank(),
-        legend.position="none",
-        axis.title.y=element_blank(),
-        panel.background=element_blank(),
-        panel.border=element_blank(),
-        panel.grid.major=element_blank(),
-        panel.grid.minor=element_blank(),
-        plot.background=element_blank()
-        ) +
-    geom_text(
-        data=set$fields,
-        aes(
-            x=4,y=(ymin+ymax)/2, angle = theta, 
-            label=type, fontface="bold", lineheight = 0.3
-            ), size = 4
-        ) +
-    geom_text(
-        data=set$skills,
-        aes(
-            x=11, y=(ymin+ymax)/2, angle = theta, 
-            label=skill, fontface="bold", lineheight = 0.3
-            ), size = 2.8
-        ) +
-    coord_polar(theta="y")  
 
-    return(set)
+    inner <- makeTheta(sliceTable(table, ifactor))
+    inner$alp <- ialp
+    col <- stripNames(col)
+
+    plot <- 
+        ggplot() + 
+            geom_rect(
+                data=table,
+                aes_string(
+                    fill=ifactor, colour=ifactor, alpha=afactor, 
+                    ymax="ymax", ymin="ymin", 
+                    xmax=22, xmin=9
+                    )
+                ) +
+            geom_rect(
+                data=inner,
+                aes_string(
+                    fill=ifactor, colour=ifactor, alpha=afactor, 
+                    ymax="ymax", ymin="ymin", 
+                    xmax=9, xmin=0
+                    )
+                ) + 
+            scale_fill_manual(values=stripNames(col)) +
+            scale_colour_manual(values=stripNames(col)) +
+            xlim(c(0, 25)) +
+        coord_polar(theta="y")  +
+    scale_y_continuous(aes(x=24, vjust=0, hjust=0),
+        breaks=(inner[["ymin"]]+inner[["ymax"]])/2,   # where to place the labels
+        labels=lab[as.character(inner[[ifactor]]) ]  # the labels
+    ) +
+        theme(
+            aspect.ratio=1,
+            axis.line=element_blank(),
+            axis.text.x=element_text(aes(fontface="bold"), color='black', size = 9.5, family="alegsc"),
+            axis.text.y=element_blank(),
+            axis.ticks.y=element_blank(),
+            axis.ticks.x=element_blank(),
+            axis.title.x=element_blank(),
+            legend.position="none",
+            axis.title.y=element_blank(),
+            panel.background=element_blank(),
+            panel.border=element_blank(),
+            panel.grid.major=element_blank(),
+            panel.grid.minor=element_blank(),
+            plot.background=element_blank(),
+            ) +
+        geom_text(
+            data=table,
+            aes(
+                x=15.5, y=(ymin+ymax)/2, angle = theta, 
+                label=table[[ofactor]],  lineheight = 0.3
+                ), size = 3.5, family="aleg"
+            ) +
+        geom_text(
+            data=inner,
+            aes(
+                x=5,y=(ymin+ymax)/2, angle = theta, 
+                label=inner[[ifactor]], fontface="bold", lineheight = 0.3
+                ),  size = 3.5, family="aleg"
+            ) #+
+        #geom_text(
+         #   data=inner,
+          #  aes(
+           #     x=18,y=(ymin+ymax)/2, 
+            #    label=lab[as.character(inner[[ifactor]]) ], lineheight = 0.3
+             #   ),  vjust="outwards",hjust="outwards", size = 3.5, family="rock"
+           # ) 
+
+
+
+    return(plot)
 }
 
-# Save Plots as PDF
-savePdfs <- function(set) 
+
+printVar <- function(var)
 {
-    name <- names(set$plot)
-    for (plot in 1:length(set$plot))
+    coord <- strsplit(deparse(substitute(var)),"$")
+    varName <- coord[length(coord)]
+    return(varName)
+}
+
+savePdf <- function(plot, path="./out/plot/") UseMethod("savePdf")
+
+# Save Plots as PDF
+savePdf.ggplot <- function(plot, path="./out/plots/") 
+{
+    pdf(paste0(path, ".pdf"))
+    print(plot)
+    dev.off()
+    return(plot)
+}
+
+
+savePdf.list <- function(plot, path="./out/plots/") 
+{
+    for (el in names(plot))
     {
-        pdf(paste0(set$par$o,name[plot],".pdf"))
-        print(set$plot[plot])
-        dev.off()
-        return()
+        savePdf(plot[[el]], paste0(path,el))
     }
 }
 
