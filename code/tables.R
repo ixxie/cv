@@ -1,5 +1,4 @@
 library(ggplot2)
-library(ggrepel)
 library(magrittr)
 library(plyr)
 library(showtext)
@@ -20,7 +19,7 @@ makeSet <- function(par=list())
 # Loads the data set from a csv file:
 loadTables <- function(set)
 {
-    tables <- normalizePath(paste0("./in/tables/",list.files("./in/tables")))
+    tables <- normalizePath(paste0("./tables/",list.files("./tables")))
     # Load skills.csv into dataframe
     for (table in tables)
     {
@@ -267,10 +266,10 @@ printVar <- function(var)
     return(varName)
 }
 
-savePdf <- function(plot, path="./out/plot/") UseMethod("savePdf")
+savePdf <- function(plot, path="./plots/") UseMethod("savePdf")
 
 # Save Plots as PDF
-savePdf.ggplot <- function(plot, path="./out/plots/") 
+savePdf.ggplot <- function(plot, path="./plots/") 
 {
     pdf(paste0(path, ".pdf"))
     print(plot)
@@ -279,7 +278,7 @@ savePdf.ggplot <- function(plot, path="./out/plots/")
 }
 
 
-savePdf.list <- function(plot, path="./out/plots/") 
+savePdf.list <- function(plot, path="./plots/") 
 {
     for (el in names(plot))
     {

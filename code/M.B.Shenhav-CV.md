@@ -19,7 +19,7 @@
 
 From inside out: *fields*, *skills* (darker is more advanced), and *specialties*.
 
-![](./out/plots/skillpie.pdf){#id .class width=100% }
+![](./plots/skillpie.pdf){#id .class width=100% }
 
 \
 -------------------------------------------------------------------------------------

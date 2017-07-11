@@ -1,5 +1,5 @@
 
-source("./in/code/tables.R")
+source("./code/tables.R")
 
 # Main function for creating the holoplot:
 makeSkills <- function(par=list())
@@ -24,7 +24,7 @@ makeSkills <- function(par=list())
 
     set$plot <- c(set$plot, barplots)
     
-    savePdf(set$plot, "./out/plots/")
+    savePdf(set$plot, "./plots/")
 
     return(set)
 

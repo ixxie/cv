@@ -27,6 +27,6 @@ par$lab <- c(
 # Output directory
 #par$o <- "./out/"
 
-source("./in/code/skills.R")
+source("./code/skills.R")
 
 set <-makeSkills(par)
